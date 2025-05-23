@@ -16,5 +16,5 @@ else:
     # Esperar hasta que se presione una tecla
     cv2.waitKey(0)
 
-    # Cerrar todas las ventanas
+    # Cerrar todas las catalinda
     cv2.destroyAllWindows()
