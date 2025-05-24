@@ -1,0 +1,467 @@
+---
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Dashboard - Panel de Control</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: #333;
+      }
+      
+      .header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 1rem 2rem;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      
+      .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #667eea;
+      }
+      
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      
+      .avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+      
+      .main-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 2rem;
+      }
+      
+      .welcome-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        text-align: center;
+      }
+      
+      .welcome-title {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      .welcome-subtitle {
+        color: #666;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+      }
+      
+      .login-time {
+        background: #e8f5e8;
+        color: #155724;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        display: inline-block;
+        font-size: 0.9rem;
+      }
+      
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+      }
+      
+      .card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+      }
+      
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+      
+      .card-icon {
+        font-size: 1.5rem;
+      }
+      
+      .card-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #333;
+      }
+      
+      .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+      }
+      
+      .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+      }
+      
+      .actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+      }
+      
+      .btn {
+        padding: 0.8rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        font-weight: 500;
+      }
+      
+      .btn-primary {
+        background: #667eea;
+        color: white;
+      }
+      
+      .btn-primary:hover {
+        background: #5a6fd8;
+        transform: translateY(-2px);
+      }
+      
+      .btn-secondary {
+        background: #f8f9fa;
+        color: #333;
+        border: 2px solid #e9ecef;
+      }
+      
+      .btn-secondary:hover {
+        background: #e9ecef;
+      }
+      
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+      
+      .btn-danger:hover {
+        background: #c82333;
+      }
+      
+      .security-info {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+      }
+      
+      .security-title {
+        color: #856404;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      
+      .security-text {
+        color: #856404;
+        font-size: 0.9rem;
+      }
+      
+      .footer {
+        text-align: center;
+        padding: 2rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-top: 2rem;
+      }
+      
+      @media (max-width: 768px) {
+        .header-content {
+          flex-direction: column;
+          gap: 1rem;
+        }
+        
+        .main-container {
+          padding: 0 1rem;
+        }
+        
+        .welcome-title {
+          font-size: 2rem;
+        }
+        
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+        
+        .actions {
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">🔐 FaceAuth</div>
+        <div class="user-info">
+          <div class="avatar" id="userAvatar">?</div>
+          <div>
+            <div id="userName" style="font-weight: 600;">Cargando...</div>
+            <div style="font-size: 0.8rem; color: #666;">Usuario verificado</div>
+          </div>
+          <button class="btn btn-secondary" onclick="logout()">Cerrar Sesión</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-container">
+      <div class="welcome-card">
+        <h1 class="welcome-title">¡Bienvenido de vuelta!</h1>
+        <p class="welcome-subtitle" id="welcomeMessage">Has accedido usando reconocimiento facial</p>
+        <div class="login-time" id="loginTime">
+          🕐 Último acceso: Cargando...
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">👤</span>
+            <h3 class="card-title">Perfil de Usuario</h3>
+          </div>
+          <div class="stat-number" id="userIdDisplay">--</div>
+          <div class="stat-label">ID de Usuario</div>
+          <div class="actions">
+            <button class="btn btn-primary">✏️ Actualizar Perfil</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">🔒</span>
+            <h3 class="card-title">Seguridad</h3>
+          </div>
+          <div class="stat-number">🟢</div>
+          <div class="stat-label">Estado: Verificado</div>
+          <div class="security-info">
+            <div class="security-title">🛡️ Información de Seguridad</div>
+            <div class="security-text">
+              Tu identidad ha sido verificada mediante reconocimiento facial biométrico.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">⏰</span>
+            <h3 class="card-title">Actividad Reciente</h3>
+          </div>
+          <div class="stat-number" id="sessionCount">1</div>
+          <div class="stat-label">Sesiones hoy</div>
+          <div class="actions">
+            <button class="btn btn-secondary">📊 Ver Historial</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">⚙️</span>
+            <h3 class="card-title">Configuración</h3>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary">🔄 Actualizar Rostro</button>
+            <button class="btn btn-secondary">🌙 Modo Oscuro</button>
+            <button class="btn btn-danger">🗑️ Eliminar Cuenta</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>Aplicación de Reconocimiento Facial - Tecnología biométrica avanzada</p>
+    </footer>
+
+    <script>
+      class Dashboard {
+        constructor() {
+          this.userData = null;
+          this.init();
+        }
+        
+        init() {
+          this.loadUserData();
+          this.updateUI();
+          this.checkAuthentication();
+        }
+        
+        loadUserData() {
+          const userData = sessionStorage.getItem('user');
+          if (userData) {
+            this.userData = JSON.parse(userData);
+          }
+        }
+        
+        checkAuthentication() {
+          if (!this.userData) {
+            alert('No estás autenticado. Redirigiendo al login...');
+            window.location.href = '/';
+            return;
+          }
+        }
+        
+        updateUI() {
+          if (!this.userData) return;
+          
+          // Actualizar nombre de usuario
+          const userName = document.getElementById('userName');
+          if (userName) {
+            userName.textContent = this.userData.name;
+          }
+          
+          // Actualizar avatar con inicial
+          const userAvatar = document.getElementById('userAvatar');
+          if (userAvatar && this.userData.name) {
+            userAvatar.textContent = this.userData.name.charAt(0).toUpperCase();
+          }
+          
+          // Actualizar mensaje de bienvenida
+          const welcomeMessage = document.getElementById('welcomeMessage');
+          if (welcomeMessage) {
+            welcomeMessage.textContent = `¡Hola ${this.userData.name}! Has accedido usando reconocimiento facial`;
+          }
+          
+          // Actualizar tiempo de login
+          const loginTime = document.getElementById('loginTime');
+          if (loginTime && this.userData.login_time) {
+            const date = new Date(this.userData.login_time);
+            loginTime.textContent = `🕐 Último acceso: ${date.toLocaleString('es-ES')}`;
+          }
+          
+          // Actualizar ID de usuario
+          const userIdDisplay = document.getElementById('userIdDisplay');
+          if (userIdDisplay) {
+            userIdDisplay.textContent = this.userData.user_id || 'N/A';
+          }
+          
+          // Actualizar contador de sesiones (simulado)
+          const sessionCount = document.getElementById('sessionCount');
+          if (sessionCount) {
+            const sessions = Math.floor(Math.random() * 5) + 1;
+            sessionCount.textContent = sessions.toString();
+          }
+        }
+        
+        getUserData() {
+          return this.userData;
+        }
+      }
+      
+      // Función global para cerrar sesión
+      function logout() {
+        if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+          sessionStorage.removeItem('user');
+          window.location.href = '/';
+        }
+      }
+      
+      // Inicializar dashboard
+      const dashboard = new Dashboard();
+      
+      // Agregar funcionalidad a los botones
+      document.addEventListener('DOMContentLoaded', () => {
+        // Simular funcionalidades de botones
+        const buttons = document.querySelectorAll('.btn');
+        buttons.forEach(button => {
+          if (button.textContent.includes('Actualizar Perfil')) {
+            button.addEventListener('click', () => {
+              alert('Funcionalidad de actualizar perfil en desarrollo');
+            });
+          }
+          
+          if (button.textContent.includes('Ver Historial')) {
+            button.addEventListener('click', () => {
+              alert('Funcionalidad de historial en desarrollo');
+            });
+          }
+          
+          if (button.textContent.includes('Actualizar Rostro')) {
+            button.addEventListener('click', () => {
+              if (confirm('¿Quieres volver al login para actualizar tu rostro?')) {
+                sessionStorage.removeItem('user');
+                window.location.href = '/';
+              }
+            });
+          }
+          
+          if (button.textContent.includes('Modo Oscuro')) {
+            button.addEventListener('click', () => {
+              alert('Modo oscuro en desarrollo');
+            });
+          }
+          
+          if (button.textContent.includes('Eliminar Cuenta')) {
+            button.addEventListener('click', () => {
+              if (confirm('¿ESTÁS SEGURO? Esta acción eliminará permanentemente tu cuenta y datos biométricos.')) {
+                alert('Funcionalidad de eliminar cuenta en desarrollo');
+              }
+            });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

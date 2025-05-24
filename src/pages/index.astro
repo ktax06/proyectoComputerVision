@@ -263,8 +263,15 @@
             const result = await response.json();
             
             if (result.success) {
-              this.showStatus('¡Login exitoso!', 'success');
-              this.showUserInfo();
+              this.showStatus('¡Login exitoso! Redirigiendo...', 'success');
+              
+              // Guardar datos del usuario en sessionStorage
+              sessionStorage.setItem('user', JSON.stringify(result.data));
+              
+              // Redireccionar después de un breve delay
+              setTimeout(() => {
+                window.location.href = '/dashboard';
+              }, 1500);
             } else {
               this.showStatus(result.message || 'Rostro no reconocido', 'error');
             }

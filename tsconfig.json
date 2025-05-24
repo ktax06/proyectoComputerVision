@@ -8,7 +8,14 @@
     "dist"
   ],
   "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "react"
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/pages/*"]
+    },
+    "types": [
+      "astro/client",
+      "astro/client/types",
+      "@astrojs/image/client"
+    ]
   }
 }
