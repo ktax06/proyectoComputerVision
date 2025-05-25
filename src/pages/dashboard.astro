@@ -263,7 +263,7 @@
             <div id="userName" style="font-weight: 600;">Cargando...</div>
             <div style="font-size: 0.8rem; color: #666;">Usuario verificado</div>
           </div>
-          <button class="btn btn-secondary" onclick="logout()">Cerrar Sesión</button>
+          <button id="logoutButton" class="btn btn-secondary">Cerrar Sesión</button>
         </div>
       </div>
     </header>
@@ -336,6 +336,41 @@
     </footer>
 
     <script>
+      // Coloca esta función al INICIO del script, justo después de la apertura de la etiqueta <script>
+function handleLogout() {
+  console.log("Función handleLogout ejecutada");
+  sessionStorage.clear();
+  window.location.href = '/';
+}
+
+// Al final del script, después de todo lo demás:
+document.addEventListener('DOMContentLoaded', () => {
+  // Código existente...
+  
+  // Agrega esto al final del addEventListener existente
+  document.getElementById('logoutButton').addEventListener('click', function() {
+    console.log("Botón de logout clickeado");
+    // Primero intenta el logout al servidor
+    try {
+      const userData = JSON.parse(sessionStorage.getItem('user') || '{}');
+      
+      if (userData && userData.user_id) {
+        fetch('http://localhost:8000/logout', {
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userData.user_id })
+        });
+      }
+    } catch (e) {
+      console.error("Error enviando logout al servidor:", e);
+    }
+    
+    // Independientemente de la respuesta del servidor, cerrar sesión local
+    setTimeout(() => {
+      handleLogout();
+    }, 300); // Pequeño retraso para asegurar que el fetch inicie
+  });
+});
       class Dashboard {
         constructor() {
           this.userData = null;
@@ -409,14 +444,7 @@
           return this.userData;
         }
       }
-      
-      // Función global para cerrar sesión
-      function logout() {
-        if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-          sessionStorage.removeItem('user');
-          window.location.href = '/';
-        }
-      }
+
       
       // Inicializar dashboard
       const dashboard = new Dashboard();
@@ -462,6 +490,11 @@
           }
         });
       });
+
+
+
+
+
     </script>
   </body>
 </html>

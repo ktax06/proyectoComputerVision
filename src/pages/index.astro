@@ -200,6 +200,7 @@
           this.stream = null;
           
           this.initEventListeners();
+          this.checkExistingSession();
         }
         
         initEventListeners() {
@@ -229,7 +230,56 @@
             this.showStatus('Error al acceder a la cámara: ' + error.message, 'error');
           }
         }
-        
+          checkExistingSession() {
+    const userData = sessionStorage.getItem('user');
+    if (userData) {
+      // Si hay datos de usuario, mostrar opción de continuar sesión
+      this.showStatus('Ya tienes una sesión activa', 'info');
+      
+      const continueBtn = document.createElement('button');
+      continueBtn.textContent = 'Continuar a Dashboard';
+      continueBtn.className = 'btn-success';
+      continueBtn.style.marginTop = '1rem';
+      continueBtn.onclick = () => window.location.href = '/dashboard';
+      
+      const logoutBtn = document.createElement('button');
+      logoutBtn.textContent = 'Cerrar Sesión Actual';
+      logoutBtn.className = 'btn-secondary';
+      logoutBtn.style.marginLeft = '1rem';
+      logoutBtn.onclick = () => this.logout();
+      
+      const buttonsDiv = document.createElement('div');
+      buttonsDiv.appendChild(continueBtn);
+      buttonsDiv.appendChild(logoutBtn);
+      
+      this.status.after(buttonsDiv);
+    }
+  }
+    async logout() {
+    try {
+      const userData = JSON.parse(sessionStorage.getItem('user'));
+      
+      if (userData && userData.user_id) {
+        await fetch(`${this.serverUrl}/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ user_id: userData.user_id })
+        });
+      }
+      
+      sessionStorage.removeItem('user');
+      this.showStatus('Sesión cerrada correctamente', 'success');
+      
+      // Recargar la página para reiniciar la aplicación
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      sessionStorage.removeItem('user');
+      this.showStatus('Error al cerrar sesión, pero datos locales eliminados', 'error');
+    }
+  }
         captureFrame() {
           const canvas = document.createElement('canvas');
           canvas.width = this.video.videoWidth;

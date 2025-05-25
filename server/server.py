@@ -129,6 +129,12 @@ def find_matching_user(face_encoding: np.ndarray, tolerance: float = 0.6) -> str
         matches = face_recognition.compare_faces([stored_encoding], face_encoding, tolerance=tolerance)
         
         if matches[0]:
+            # Registrar último login
+            user_data['last_login'] = str(np.datetime64('now'))
+            # Incrementar contador de sesiones
+            user_data['login_count'] = user_data.get('login_count', 0) + 1
+            # Guardar cambios
+            save_users()
             # Calcular distancia para mayor precisión
             distance = face_recognition.face_distance([stored_encoding], face_encoding)[0]
             print(f"Match encontrado para {user_data['name']} con distancia: {distance:.3f}")
@@ -258,6 +264,31 @@ async def list_users():
         "users": users_list,
         "total": len(users_list)
     }
+
+class LogoutRequest(BaseModel):
+    user_id: str
+
+@app.post("/logout", response_model=APIResponse)
+async def logout_user(request: LogoutRequest):
+    """Registrar cierre de sesión del usuario"""
+    try:
+        if request.user_id in users_db:
+            # Aquí podrías registrar la hora de cierre de sesión
+            users_db[request.user_id]['last_logout'] = str(np.datetime64('now'))
+            save_users()  # Guardar cambios en el archivo
+            
+            return APIResponse(
+                success=True,
+                message="Sesión cerrada exitosamente"
+            )
+        else:
+            return APIResponse(
+                success=False,
+                message="Usuario no encontrado"
+            )
+    except Exception as e:
+        print(f"Error en logout: {e}")
+        return APIResponse(success=False, message="Error interno del servidor")
 
 @app.delete("/users/{user_id}")
 async def delete_user(user_id: str):
