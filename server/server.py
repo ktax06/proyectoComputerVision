@@ -277,3 +277,54 @@ if __name__ == "__main__":
     print("Iniciando servidor de reconocimiento facial...")
     print("Usuarios registrados:", len(users_db))
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+
+
+class UpdateUserRequest(BaseModel):
+    name: str
+
+@app.put("/users/{user_id}", response_model=APIResponse)
+async def update_user(user_id: str, request: UpdateUserRequest):
+    print("Usuarios registrados:", users_db.keys())
+    if user_id in users_db:
+        old_name = users_db[user_id]['name']
+        users_db[user_id]['name'] = request.name.strip()
+        save_users()
+        return APIResponse(
+            success=True,
+            message=f"Nombre actualizado de '{old_name}' a '{request.name}'"
+        )
+    return APIResponse(success=False, message="Usuario no encontrado")
+
+@app.get("/users/{user_id}", response_model=APIResponse)
+async def get_user(user_id: str):
+    if user_id in users_db:
+        user = users_db[user_id]
+        return APIResponse(
+            success=True,
+            message="Usuario encontrado",
+            data={
+                "user_id": user_id,
+                "name": user['name'],
+                "registered_at": user.get('registered_at')
+            }
+        )
+    return APIResponse(success=False, message="Usuario no encontrado")
+
+@app.post("/check-face", response_model=APIResponse)
+async def check_face(request: LoginRequest):
+    try:
+        image_array = base64_to_image(request.image)
+        face_encoding = get_face_encoding(image_array)
+        user_id = find_matching_user(face_encoding)
+        
+        if user_id:
+            user = users_db[user_id]
+            return APIResponse(
+                success=True,
+                message=f"Rostro reconocido: {user['name']}",
+                data={"user_id": user_id, "name": user['name']}
+            )
+        else:
+            return APIResponse(success=False, message="Rostro no encontrado")
+    except Exception as e:
+        return APIResponse(success=False, message=str(e))

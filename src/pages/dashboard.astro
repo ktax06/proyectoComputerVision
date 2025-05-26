@@ -283,7 +283,7 @@
             <span class="card-icon">👤</span>
             <h3 class="card-title">Perfil de Usuario</h3>
           </div>
-          <div class="stat-number" id="userIdDisplay">--</div>
+          <div class="stat-number" id="userIdDisplay">userData.name</div>
           <div class="stat-label">ID de Usuario</div>
           <div class="actions">
             <button class="btn btn-primary">✏️ Actualizar Perfil</button>
@@ -336,7 +336,41 @@
     </footer>
 
     <script>
+      
       class Dashboard {
+
+        updateUserProfile(userData) {
+          if (!userData) {
+            alert("No se encontró información de usuario.");
+            return;
+          }
+
+          const newName = prompt("Ingresa tu nuevo nombre:");
+          if (!newName || newName.trim() === "") {
+            alert("El nombre no puede estar vacío.");
+            return;
+          }
+          fetch(`http://localhost:8000/users/${userData.user_id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newName }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("Nombre actualizado correctamente.");
+                userData.name = newName;
+                sessionStorage.setItem("user", JSON.stringify(userData));
+                dashboard.updateUI(); // ← fuerza actualización de nombre, avatar, etc.
+              } else {
+                alert("Error al actualizar el perfil: " + data.message);
+              }
+            })
+            .catch(() => {
+              alert("Error de conexión con el servidor.");
+            });
+        }
+
         constructor() {
           this.userData = null;
           this.init();
@@ -349,12 +383,16 @@
         }
         
         loadUserData() {
-          const userData = sessionStorage.getItem('user');
+          const userData = sessionStorage.getItem("user");
           if (userData) {
             this.userData = JSON.parse(userData);
+            console.log("Usuario cargado:", this.userData);
+          } else {
+            console.warn("No hay usuario en sessionStorage.");
           }
         }
         
+
         checkAuthentication() {
           if (!this.userData) {
             alert('No estás autenticado. Redirigiendo al login...');
@@ -418,17 +456,24 @@
         }
       }
       
+
       // Inicializar dashboard
       const dashboard = new Dashboard();
       
       // Agregar funcionalidad a los botones
       document.addEventListener('DOMContentLoaded', () => {
-        // Simular funcionalidades de botones
+        if (!dashboard.userData) {
+          console.error("Error: No hay datos de usuario disponibles.");
+          return;
+        }
+
+      console.log("Intentando actualizar usuario con ID:", dashboard.userData.user_id);
         const buttons = document.querySelectorAll('.btn');
         buttons.forEach(button => {
           if (button.textContent.includes('Actualizar Perfil')) {
             button.addEventListener('click', () => {
-              alert('Funcionalidad de actualizar perfil en desarrollo');
+              console.log("Intentando actualizar usuario con ID:", dashboard.userData.user_id);
+              dashboard.updateUserProfile(dashboard.getUserData());
             });
           }
           
