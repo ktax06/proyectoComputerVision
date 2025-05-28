@@ -254,6 +254,7 @@
     </style>
   </head>
   <body>
+    <!-- Cabecera con información del usuario y botón de cierre -->
     <header class="header">
       <div class="header-content">
         <div class="logo">🔐 FaceAuth</div>
@@ -267,8 +268,9 @@
         </div>
       </div>
     </header>
-
+    <!-- Contenido principal del dashboard -->
     <main class="main-container">
+      <!-- Tarjeta de bienvenida -->
       <div class="welcome-card">
         <h1 class="welcome-title">¡Bienvenido de vuelta!</h1>
         <p class="welcome-subtitle" id="welcomeMessage">Has accedido usando reconocimiento facial</p>
@@ -276,8 +278,9 @@
           🕐 Último acceso: Cargando...
         </div>
       </div>
-
+      <!-- Grid de tarjetas con información y opciones -->
       <div class="dashboard-grid">
+        <!-- Tarjeta de perfil -->
         <div class="card">
           <div class="card-header">
             <span class="card-icon">👤</span>
@@ -289,7 +292,7 @@
             <button class="btn btn-primary">✏️ Actualizar Perfil</button>
           </div>
         </div>
-
+        <!-- Tarjeta de seguridad -->
         <div class="card">
           <div class="card-header">
             <span class="card-icon">🔒</span>
@@ -304,7 +307,7 @@
             </div>
           </div>
         </div>
-
+        <!-- Tarjeta de actividad reciente -->
         <div class="card">
           <div class="card-header">
             <span class="card-icon">⏰</span>
@@ -316,7 +319,7 @@
             <button class="btn btn-secondary">📊 Ver Historial</button>
           </div>
         </div>
-
+        <!-- Tarjeta de configuración -->
         <div class="card">
           <div class="card-header">
             <span class="card-icon">⚙️</span>
@@ -330,60 +333,60 @@
         </div>
       </div>
     </main>
-
+    <!-- Pie de página -->
     <footer class="footer">
       <p>Aplicación de Reconocimiento Facial - Tecnología biométrica avanzada</p>
     </footer>
 
     <script>
-      // Coloca esta función al INICIO del script, justo después de la apertura de la etiqueta <script>
-function handleLogout() {
-  console.log("Función handleLogout ejecutada");
-  sessionStorage.clear();
-  window.location.href = '/';
-}
-
-// Al final del script, después de todo lo demás:
-document.addEventListener('DOMContentLoaded', () => {
-  // Código existente...
-  
-  // Agrega esto al final del addEventListener existente
-  document.getElementById('logoutButton').addEventListener('click', function() {
-    console.log("Botón de logout clickeado");
-    // Primero intenta el logout al servidor
-    try {
-      const userData = JSON.parse(sessionStorage.getItem('user') || '{}');
       
-      if (userData && userData.user_id) {
-        fetch('http://localhost:8000/logout', {
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userData.user_id })
-        });
-      }
-    } catch (e) {
-      console.error("Error enviando logout al servidor:", e);
+    function handleLogout() {
+      console.log("Función handleLogout ejecutada");
+      sessionStorage.clear();
+      window.location.href = '/';
     }
-    
-    // Independientemente de la respuesta del servidor, cerrar sesión local
-    setTimeout(() => {
-      handleLogout();
-    }, 300); // Pequeño retraso para asegurar que el fetch inicie
-  });
-});
-      class Dashboard {
 
+    // Configurar eventos cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', () => {
+      // Agregar event listener para el botón de cierre de sesión
+      document.getElementById('logoutButton').addEventListener('click', function() {
+        console.log("Botón de logout clickeado");
+        // Notificar al servidor sobre el cierre
+        try {
+          const userData = JSON.parse(sessionStorage.getItem('user') || '{}');
+      
+          if (userData && userData.user_id) {
+            fetch('http://localhost:8000/logout', {
+              method: 'POST', 
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: userData.user_id })
+            });
+          }
+        } catch (e) {
+          console.error("Error enviando logout al servidor:", e);
+        }
+    
+        // Cerrar sesión local después del intento de notificar al servidor
+        setTimeout(() => {
+          handleLogout();
+        }, 300); // Pequeño retraso para asegurar que el fetch inicie
+      });
+    });
+      // Clase principal para gestionar el dashboard
+      class Dashboard {
+        // Método para actualizar el perfil del usuario
         updateUserProfile(userData) {
           if (!userData) {
             alert("No se encontró información de usuario.");
             return;
           }
-
+          // Solicitar nuevo nombre al usuario
           const newName = prompt("Ingresa tu nuevo nombre:");
           if (!newName || newName.trim() === "") {
             alert("El nombre no puede estar vacío.");
             return;
           }
+          // Enviar solicitud al servidor
           fetch(`http://localhost:8000/users/${userData.user_id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -404,18 +407,18 @@ document.addEventListener('DOMContentLoaded', () => {
               alert("Error de conexión con el servidor.");
             });
         }
-
+        // Constructor: punto de entrada de la clase
         constructor() {
           this.userData = null;
           this.init();
         }
-        
+        // Inicializar el dashboard
         init() {
           this.loadUserData();
           this.updateUI();
           this.checkAuthentication();
         }
-        
+        // Cargar datos de usuario desde sessionStorage
         loadUserData() {
           const userData = sessionStorage.getItem("user");
           if (userData) {
@@ -426,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
         
-
+        // Verificar que el usuario esté autenticado
         checkAuthentication() {
           if (!this.userData) {
             alert('No estás autenticado. Redirigiendo al login...');
@@ -434,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
           }
         }
-        
+        // Actualizar elementos visuales con datos del usuario
         updateUI() {
           if (!this.userData) return;
           
@@ -456,27 +459,27 @@ document.addEventListener('DOMContentLoaded', () => {
             welcomeMessage.textContent = `¡Hola ${this.userData.name}! Has accedido usando reconocimiento facial`;
           }
           
-          // Actualizar tiempo de login
+          // Mostrar fecha y hora del último inicio de sesión
           const loginTime = document.getElementById('loginTime');
           if (loginTime && this.userData.login_time) {
             const date = new Date(this.userData.login_time);
             loginTime.textContent = `🕐 Último acceso: ${date.toLocaleString('es-ES')}`;
           }
           
-          // Actualizar ID de usuario
+          // Mostrar nombre en la sección de perfil
           const userIdDisplay = document.getElementById('userIdDisplay');
           if (userIdDisplay) {
             userIdDisplay.textContent = this.userData.name || 'N/A';
           }
           
-          // Actualizar contador de sesiones (simulado)
+          // Simular un número aleatorio de sesiones para demostración
           const sessionCount = document.getElementById('sessionCount');
           if (sessionCount) {
             const sessions = Math.floor(Math.random() * 5) + 1;
             sessionCount.textContent = sessions.toString();
           }
         }
-        
+        // Obtener datos del usuario actual
         getUserData() {
           return this.userData;
         }
@@ -489,27 +492,30 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Agregar funcionalidad a los botones
       document.addEventListener('DOMContentLoaded', () => {
+        // Verificar que tengamos datos de usuario
         if (!dashboard.userData) {
           console.error("Error: No hay datos de usuario disponibles.");
           return;
         }
 
       console.log("Intentando actualizar usuario con ID:", dashboard.userData.user_id);
+        // Asignar funciones a cada botón según su texto
         const buttons = document.querySelectorAll('.btn');
         buttons.forEach(button => {
+          // Botón de actualizar perfil
           if (button.textContent.includes('Actualizar Perfil')) {
             button.addEventListener('click', () => {
               console.log("Intentando actualizar usuario con ID:", dashboard.userData.user_id);
               dashboard.updateUserProfile(dashboard.getUserData());
             });
           }
-          
+          // Botón de ver historial
           if (button.textContent.includes('Ver Historial')) {
             button.addEventListener('click', () => {
               alert('Funcionalidad de historial en desarrollo');
             });
           }
-          
+          // Botón para actualizar rostro (vuelve al login)
           if (button.textContent.includes('Actualizar Rostro')) {
             button.addEventListener('click', () => {
               if (confirm('¿Quieres volver al login para actualizar tu rostro?')) {
@@ -518,13 +524,13 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             });
           }
-          
+          // Botón para modo oscuro (en desarrollo)
           if (button.textContent.includes('Modo Oscuro')) {
             button.addEventListener('click', () => {
               alert('Modo oscuro en desarrollo');
             });
           }
-          
+          // Botón para eliminar cuenta (con confirmación)
           if (button.textContent.includes('Eliminar Cuenta')) {
             button.addEventListener('click', () => {
               if (confirm('¿ESTÁS SEGURO? Esta acción eliminará permanentemente tu cuenta y datos biométricos.')) {
@@ -534,11 +540,6 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
       });
-
-
-
-
-
     </script>
   </body>
 </html>

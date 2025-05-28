@@ -9,7 +9,7 @@ from PIL import Image
 import json
 import os
 from typing import List, Dict
-
+# Creación de la aplicación FastAPI
 app = FastAPI(title="Facial Recognition API", version="1.0.0")
 
 # Configurar CORS para permitir requests desde el frontend
@@ -23,18 +23,18 @@ app.add_middleware(
 
 # Modelos de datos
 class LoginRequest(BaseModel):
-    image: str
+    image: str  # Imagen en formato base64
 
 class RegisterRequest(BaseModel):
-    image: str
-    name: str
+    image: str  # Imagen en formato base64
+    name: str   # Nombre del usuario a registrar
 
 class APIResponse(BaseModel):
-    success: bool
-    message: str
-    data: Dict = None
+    success: bool      # Indica si la operación tuvo éxito
+    message: str       # Mensaje descriptivo
+    data: Dict = None  # Datos adicionales (opcional)
 
-# Base de datos simple en memoria (en producción usarías una DB real)
+# Base de datos temporal en memoria
 users_db = {}
 USERS_FILE = "users_data.json"
 
@@ -60,7 +60,7 @@ def load_users():
 def save_users():
     """Guardar usuarios en archivo JSON"""
     try:
-        # Convertir numpy arrays a listas para JSON
+        # Convertir numpy arrays a listas para poder guardarlos en JSON
         data_to_save = {}
         for user_id, user_data in users_db.items():
             data_copy = user_data.copy()
@@ -98,11 +98,11 @@ def base64_to_image(base64_string: str) -> np.ndarray:
         raise ValueError(f"Error procesando imagen: {str(e)}")
 
 def get_face_encoding(image_array: np.ndarray) -> np.ndarray:
-    """Obtener encoding facial de una imagen"""
+    """Extrae características faciales de una imagen"""
     try:
         # Detectar caras en la imagen
         face_locations = face_recognition.face_locations(image_array)
-        
+        # Validar que se encontró al menos un rostro
         if len(face_locations) == 0:
             raise ValueError("No se detectó ningún rostro en la imagen")
         
@@ -129,9 +129,8 @@ def find_matching_user(face_encoding: np.ndarray, tolerance: float = 0.6) -> str
         matches = face_recognition.compare_faces([stored_encoding], face_encoding, tolerance=tolerance)
         
         if matches[0]:
-            # Registrar último login
+            # Actualizar datos de login
             user_data['last_login'] = str(np.datetime64('now'))
-            # Incrementar contador de sesiones
             user_data['login_count'] = user_data.get('login_count', 0) + 1
             # Guardar cambios
             save_users()
@@ -139,14 +138,15 @@ def find_matching_user(face_encoding: np.ndarray, tolerance: float = 0.6) -> str
             distance = face_recognition.face_distance([stored_encoding], face_encoding)[0]
             print(f"Match encontrado para {user_data['name']} con distancia: {distance:.3f}")
             return user_id
-    
+    # Si no hay coincidencias
     return None
 
 # Cargar usuarios al iniciar
 load_users()
-
+# --- RUTAS DE LA API ---
 @app.get("/")
 async def root():
+    """Ruta principal para verificar que el servidor está funcionando"""
     return {"message": "Facial Recognition API está funcionando", "users_count": len(users_db)}
 
 @app.post("/register", response_model=APIResponse)
@@ -185,7 +185,7 @@ async def register_face(request: RegisterRequest):
             'registered_at': str(np.datetime64('now'))
         }
         
-        # Persistir datos
+        # Guardar cambios
         save_users()
         
         print(f"Usuario registrado: {request.name} (ID: {user_id})")
@@ -206,6 +206,7 @@ async def register_face(request: RegisterRequest):
 async def login_with_face(request: LoginRequest):
     """Autenticar usuario con reconocimiento facial"""
     try:
+        # Validaciones básicas
         if not request.image:
             raise ValueError("La imagen es requerida")
         
@@ -214,7 +215,7 @@ async def login_with_face(request: LoginRequest):
                 success=False,
                 message="No hay usuarios registrados. Registra tu rostro primero."
             )
-        
+        # Procesar imagen y buscar coincidencia
         # Procesar imagen
         image_array = base64_to_image(request.image)
         
@@ -223,7 +224,7 @@ async def login_with_face(request: LoginRequest):
         
         # Buscar usuario coincidente
         user_id = find_matching_user(face_encoding)
-        
+        # Verificar resultado
         if user_id:
             user_data = users_db[user_id]
             print(f"Login exitoso para: {user_data['name']}")
@@ -266,14 +267,14 @@ async def list_users():
     }
 
 class LogoutRequest(BaseModel):
-    user_id: str
+    user_id: str  # ID del usuario que cierra sesión
 
 @app.post("/logout", response_model=APIResponse)
 async def logout_user(request: LogoutRequest):
     """Registrar cierre de sesión del usuario"""
     try:
         if request.user_id in users_db:
-            # Aquí podrías registrar la hora de cierre de sesión
+            # Registrar hora de cierre de sesión
             users_db[request.user_id]['last_logout'] = str(np.datetime64('now'))
             save_users()  # Guardar cambios en el archivo
             
@@ -311,10 +312,11 @@ if __name__ == "__main__":
 
 
 class UpdateUserRequest(BaseModel):
-    name: str
+    name: str  # Nuevo nombre para el usuario
 
 @app.put("/users/{user_id}", response_model=APIResponse)
 async def update_user(user_id: str, request: UpdateUserRequest):
+    """Actualizar información de un usuario"""
     print("Usuarios registrados:", users_db.keys())
     if user_id in users_db:
         old_name = users_db[user_id]['name']
@@ -328,6 +330,7 @@ async def update_user(user_id: str, request: UpdateUserRequest):
 
 @app.get("/users/{user_id}", response_model=APIResponse)
 async def get_user(user_id: str):
+    """Obtener información de un usuario específico"""
     if user_id in users_db:
         user = users_db[user_id]
         return APIResponse(
@@ -343,6 +346,7 @@ async def get_user(user_id: str):
 
 @app.post("/check-face", response_model=APIResponse)
 async def check_face(request: LoginRequest):
+    """Verificar si un rostro está registrado sin iniciar sesión"""
     try:
         image_array = base64_to_image(request.image)
         face_encoding = get_face_encoding(image_array)

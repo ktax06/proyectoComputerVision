@@ -158,10 +158,11 @@
     </style>
   </head>
   <body>
+    <!-- Encabezado de la aplicación -->
     <div class="container">
       <h1>🔐 Login Facial</h1>
       <p class="subtitle">Usa tu rostro para acceder de forma segura</p>
-      
+      <!-- Contenedor para mostrar la cámara -->
       <div class="camera-container">
         <video id="video" class="hidden"></video>
         <div id="placeholder" class="camera-placeholder">
@@ -174,9 +175,9 @@
         <button id="loginBtn" class="btn-primary hidden">Iniciar Sesión</button>
         <button id="registerBtn" class="btn-success hidden">Registrar Rostro</button>
       </div>
-      
+      <!-- Área para mostrar mensajes al usuario -->
       <div id="status" class="status hidden"></div>
-      
+      <!-- Información de usuario autenticado -->
       <div id="userInfo" class="user-info hidden">
         <h3>¡Bienvenido!</h3>
         <p>Has iniciado sesión correctamente</p>
@@ -185,8 +186,10 @@
     </div>
 
     <script>
+      // Clase principal que maneja toda la lógica de la aplicación
       class FacialRecognitionApp {
         constructor() {
+          // Capturar referencias a elementos DOM importantes
           this.video = document.getElementById('video');
           this.placeholder = document.getElementById('placeholder');
           this.startCameraBtn = document.getElementById('startCamera');
@@ -195,30 +198,31 @@
           this.logoutBtn = document.getElementById('logoutBtn');
           this.status = document.getElementById('status');
           this.userInfo = document.getElementById('userInfo');
-          
+          // URL del servidor backend
           this.serverUrl = 'http://localhost:8000';
           this.stream = null;
-          
+          // Inicializar funcionalidades
           this.initEventListeners();
           this.checkExistingSession();
         }
-        
+        // Configurar los event listeners para los botones
         initEventListeners() {
           this.startCameraBtn.addEventListener('click', () => this.startCamera());
           this.loginBtn.addEventListener('click', () => this.attemptLogin());
           this.registerBtn.addEventListener('click', () => this.registerFace());
           this.logoutBtn.addEventListener('click', () => this.logout());
         }
-        
+        // Iniciar la cámara web del usuario
         async startCamera() {
           try {
+            // Solicitar acceso a la cámara
             this.stream = await navigator.mediaDevices.getUserMedia({ 
               video: { width: 320, height: 240 } 
             });
-            
+            // Configurar el video y mostrar la vista de la cámara
             this.video.srcObject = this.stream;
             this.video.play();
-            
+            // Actualizar UI para mostrar cámara y botones de acción
             this.video.classList.remove('hidden');
             this.placeholder.classList.add('hidden');
             this.startCameraBtn.classList.add('hidden');
@@ -230,24 +234,25 @@
             this.showStatus('Error al acceder a la cámara: ' + error.message, 'error');
           }
         }
+          // Verificar si hay una sesión activa al cargar la página
           checkExistingSession() {
     const userData = sessionStorage.getItem('user');
     if (userData) {
       // Si hay datos de usuario, mostrar opción de continuar sesión
       this.showStatus('Ya tienes una sesión activa', 'info');
-      
+      // Crear botón para continuar a dashboard
       const continueBtn = document.createElement('button');
       continueBtn.textContent = 'Continuar a Dashboard';
       continueBtn.className = 'btn-success';
       continueBtn.style.marginTop = '1rem';
       continueBtn.onclick = () => window.location.href = '/dashboard';
-      
+      // Crear botón para cerrar sesión
       const logoutBtn = document.createElement('button');
       logoutBtn.textContent = 'Cerrar Sesión Actual';
       logoutBtn.className = 'btn-secondary';
       logoutBtn.style.marginLeft = '1rem';
       logoutBtn.onclick = () => this.logout();
-      
+      // Añadir botones al DOM
       const buttonsDiv = document.createElement('div');
       buttonsDiv.appendChild(continueBtn);
       buttonsDiv.appendChild(logoutBtn);
@@ -255,10 +260,12 @@
       this.status.after(buttonsDiv);
     }
   }
+    // Cerrar sesión de usuario y notificar al servidor
     async logout() {
     try {
+      // Obtener datos de usuario almacenados
       const userData = JSON.parse(sessionStorage.getItem('user'));
-      
+      // Notificar al servidor sobre el cierre de sesión
       if (userData && userData.user_id) {
         await fetch(`${this.serverUrl}/logout`, {
           method: 'POST',
@@ -268,7 +275,7 @@
           body: JSON.stringify({ user_id: userData.user_id })
         });
       }
-      
+      // Limpiar datos de sesión local
       sessionStorage.removeItem('user');
       this.showStatus('Sesión cerrada correctamente', 'success');
       
@@ -280,18 +287,21 @@
       this.showStatus('Error al cerrar sesión, pero datos locales eliminados', 'error');
     }
   }
+        // Capturar una imagen actual de la cámara
         captureFrame() {
+          // Crear un canvas para capturar la imagen
           const canvas = document.createElement('canvas');
           canvas.width = this.video.videoWidth;
           canvas.height = this.video.videoHeight;
-          
+          // Dibujar el fotograma actual del video
           const ctx = canvas.getContext('2d');
           ctx.drawImage(this.video, 0, 0);
-          
+          // Devolver como URL base64
           return canvas.toDataURL('image/jpeg', 0.8);
         }
-        
+        // Intentar iniciar sesión con reconocimiento facial
         async attemptLogin() {
+          // Verificar que la cámara esté lista
           if (!this.video.videoWidth) {
             this.showStatus('Espera a que la cámara esté lista', 'error');
             return;
@@ -300,8 +310,9 @@
           this.showStatus('Analizando rostro...', 'info');
           
           try {
+            // Capturar imagen actual
             const imageData = this.captureFrame();
-            
+            // Enviar al servidor para verificación
             const response = await fetch(`${this.serverUrl}/login`, {
               method: 'POST',
               headers: {
@@ -329,21 +340,23 @@
             this.showStatus('Error de conexión con el servidor', 'error');
           }
         }
-        
+        // Registrar un nuevo rostro en el sistema
         async registerFace() {
+          // Verificar que la cámara esté lista
           if (!this.video.videoWidth) {
             this.showStatus('Espera a que la cámara esté lista', 'error');
             return;
           }
-          
+          // Solicitar nombre para el registro
           const name = prompt('Ingresa tu nombre para el registro:');
           if (!name) return;
           
           this.showStatus('Registrando rostro...', 'info');
           
           try {
+            // Capturar imagen actual
             const imageData = this.captureFrame();
-            
+            // Enviar datos al servidor para registro
             const response = await fetch(`${this.serverUrl}/register`, {
               method: 'POST',
               headers: {
@@ -356,7 +369,7 @@
             });
             
             const result = await response.json();
-            
+            // Procesar respuesta del servidor
             if (result.success) {
               this.showStatus('Rostro registrado correctamente', 'success');
             } else {
@@ -366,7 +379,7 @@
             this.showStatus('Error de conexión con el servidor', 'error');
           }
         }
-        
+        // Mostrar información del usuario autenticado
         showUserInfo() {
           this.userInfo.classList.remove('hidden');
           this.loginBtn.classList.add('hidden');
@@ -379,12 +392,12 @@
           this.registerBtn.classList.remove('hidden');
           this.showStatus('Sesión cerrada', 'info');
         }
-        
+        // Método auxiliar para mostrar mensajes de estado
         showStatus(message, type) {
           this.status.textContent = message;
           this.status.className = `status ${type}`;
           this.status.classList.remove('hidden');
-          
+          // Ocultar el mensaje después de un tiempo
           setTimeout(() => {
             this.status.classList.add('hidden');
           }, 3000);
