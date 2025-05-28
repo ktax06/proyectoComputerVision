@@ -1,6 +1,3 @@
----
----
-
 <html lang="es">
   <head>
     <meta charset="utf-8" />
@@ -69,11 +66,37 @@
         font-size: 1.1rem;
       }
       
+      .face-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.9rem;
+        font-weight: bold;
+      }
+      
+      .face-indicator.single {
+        background: rgba(40, 167, 69, 0.9);
+      }
+      
+      .face-indicator.multiple {
+        background: rgba(220, 53, 69, 0.9);
+      }
+      
+      .face-indicator.none {
+        background: rgba(255, 193, 7, 0.9);
+        color: #333;
+      }
+      
       .buttons {
         display: flex;
         gap: 1rem;
         justify-content: center;
         margin: 2rem 0;
+        flex-wrap: wrap;
       }
       
       button {
@@ -115,6 +138,17 @@
         background: #218838;
       }
       
+      .btn-disabled {
+        background: #6c757d;
+        color: white;
+        cursor: not-allowed;
+      }
+      
+      .btn-disabled:hover {
+        background: #6c757d;
+        transform: none;
+      }
+      
       .status {
         margin: 1rem 0;
         padding: 1rem;
@@ -140,6 +174,12 @@
         border: 1px solid #f5c6cb;
       }
       
+      .status.warning {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+      
       .hidden {
         display: none;
       }
@@ -155,6 +195,27 @@
         color: #28a745;
         margin-bottom: 0.5rem;
       }
+      
+      .validation-info {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        font-size: 0.9rem;
+        color: #666;
+      }
+      
+      .validation-info.error {
+        background: #ffe6e6;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      
+      .validation-info.success {
+        background: #e8f5e8;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
     </style>
   </head>
   <body>
@@ -162,12 +223,21 @@
     <div class="container">
       <h1>🔐 Login Facial</h1>
       <p class="subtitle">Usa tu rostro para acceder de forma segura</p>
+      
       <!-- Contenedor para mostrar la cámara -->
       <div class="camera-container">
         <video id="video" class="hidden"></video>
         <div id="placeholder" class="camera-placeholder">
           📷 Cámara no iniciada
         </div>
+        <div id="faceIndicator" class="face-indicator hidden">
+          0 rostros
+        </div>
+      </div>
+      
+      <!-- Información de validación -->
+      <div id="validationInfo" class="validation-info hidden">
+        <strong>Para registrarte:</strong> Solo debe haber UN rostro visible en la cámara
       </div>
       
       <div class="buttons">
@@ -175,8 +245,10 @@
         <button id="loginBtn" class="btn-primary hidden">Iniciar Sesión</button>
         <button id="registerBtn" class="btn-success hidden">Registrar Rostro</button>
       </div>
+      
       <!-- Área para mostrar mensajes al usuario -->
       <div id="status" class="status hidden"></div>
+      
       <!-- Información de usuario autenticado -->
       <div id="userInfo" class="user-info hidden">
         <h3>¡Bienvenido!</h3>
@@ -192,19 +264,26 @@
           // Capturar referencias a elementos DOM importantes
           this.video = document.getElementById('video');
           this.placeholder = document.getElementById('placeholder');
+          this.faceIndicator = document.getElementById('faceIndicator');
+          this.validationInfo = document.getElementById('validationInfo');
           this.startCameraBtn = document.getElementById('startCamera');
           this.loginBtn = document.getElementById('loginBtn');
           this.registerBtn = document.getElementById('registerBtn');
           this.logoutBtn = document.getElementById('logoutBtn');
           this.status = document.getElementById('status');
           this.userInfo = document.getElementById('userInfo');
+          
           // URL del servidor backend
           this.serverUrl = 'http://localhost:8000';
           this.stream = null;
+          this.faceDetectionInterval = null;
+          this.currentFaceCount = 0;
+          
           // Inicializar funcionalidades
           this.initEventListeners();
           this.checkExistingSession();
         }
+        
         // Configurar los event listeners para los botones
         initEventListeners() {
           this.startCameraBtn.addEventListener('click', () => this.startCamera());
@@ -212,6 +291,7 @@
           this.registerBtn.addEventListener('click', () => this.registerFace());
           this.logoutBtn.addEventListener('click', () => this.logout());
         }
+        
         // Iniciar la cámara web del usuario
         async startCamera() {
           try {
@@ -219,87 +299,121 @@
             this.stream = await navigator.mediaDevices.getUserMedia({ 
               video: { width: 320, height: 240 } 
             });
+            
             // Configurar el video y mostrar la vista de la cámara
             this.video.srcObject = this.stream;
             this.video.play();
+            
             // Actualizar UI para mostrar cámara y botones de acción
             this.video.classList.remove('hidden');
             this.placeholder.classList.add('hidden');
             this.startCameraBtn.classList.add('hidden');
             this.loginBtn.classList.remove('hidden');
             this.registerBtn.classList.remove('hidden');
+            this.faceIndicator.classList.remove('hidden');
+            this.validationInfo.classList.remove('hidden');
             
             this.showStatus('Cámara iniciada correctamente', 'info');
+            
+            // Iniciar detección de rostros en tiempo real
+            this.startFaceDetection();
+            
           } catch (error) {
             this.showStatus('Error al acceder a la cámara: ' + error.message, 'error');
           }
         }
-          // Verificar si hay una sesión activa al cargar la página
-          checkExistingSession() {
-    const userData = sessionStorage.getItem('user');
-    if (userData) {
-      // Si hay datos de usuario, mostrar opción de continuar sesión
-      this.showStatus('Ya tienes una sesión activa', 'info');
-      // Crear botón para continuar a dashboard
-      const continueBtn = document.createElement('button');
-      continueBtn.textContent = 'Continuar a Dashboard';
-      continueBtn.className = 'btn-success';
-      continueBtn.style.marginTop = '1rem';
-      continueBtn.onclick = () => window.location.href = '/dashboard';
-      // Crear botón para cerrar sesión
-      const logoutBtn = document.createElement('button');
-      logoutBtn.textContent = 'Cerrar Sesión Actual';
-      logoutBtn.className = 'btn-secondary';
-      logoutBtn.style.marginLeft = '1rem';
-      logoutBtn.onclick = () => this.logout();
-      // Añadir botones al DOM
-      const buttonsDiv = document.createElement('div');
-      buttonsDiv.appendChild(continueBtn);
-      buttonsDiv.appendChild(logoutBtn);
-      
-      this.status.after(buttonsDiv);
-    }
-  }
-    // Cerrar sesión de usuario y notificar al servidor
-    async logout() {
-    try {
-      // Obtener datos de usuario almacenados
-      const userData = JSON.parse(sessionStorage.getItem('user'));
-      // Notificar al servidor sobre el cierre de sesión
-      if (userData && userData.user_id) {
-        await fetch(`${this.serverUrl}/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ user_id: userData.user_id })
-        });
-      }
-      // Limpiar datos de sesión local
-      sessionStorage.removeItem('user');
-      this.showStatus('Sesión cerrada correctamente', 'success');
-      
-      // Recargar la página para reiniciar la aplicación
-      setTimeout(() => window.location.reload(), 1500);
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      sessionStorage.removeItem('user');
-      this.showStatus('Error al cerrar sesión, pero datos locales eliminados', 'error');
-    }
-  }
-        // Capturar una imagen actual de la cámara
+        
+        // Iniciar detección de rostros en tiempo real
+        startFaceDetection() {
+          // Verificar rostros cada 2 segundos
+          this.faceDetectionInterval = setInterval(async () => {
+            if (this.video.videoWidth > 0) {
+              await this.detectFaces();
+            }
+          }, 2000);
+        }
+        
+        // Detectar número de rostros en la imagen actual
+        async detectFaces() {
+          try {
+            const imageData = this.captureFrame();
+            
+            const response = await fetch(`${this.serverUrl}/detect-faces`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ image: imageData })
+            });
+            
+            const result = await response.json();
+            const faceCount = result.data?.face_count || 0;
+            
+            this.updateFaceIndicator(faceCount);
+            this.updateRegisterButton(faceCount);
+            
+          } catch (error) {
+            console.error('Error en detección de rostros:', error);
+          }
+        }
+        
+        // Actualizar indicador visual de rostros
+        updateFaceIndicator(faceCount) {
+          this.currentFaceCount = faceCount;
+          const indicator = this.faceIndicator;
+          
+          if (faceCount === 0) {
+            indicator.textContent = '❌ Sin rostros';
+            indicator.className = 'face-indicator none';
+          } else if (faceCount === 1) {
+            indicator.textContent = '✅ 1 rostro';
+            indicator.className = 'face-indicator single';
+          } else {
+            indicator.textContent = `⚠️ ${faceCount} rostros`;
+            indicator.className = 'face-indicator multiple';
+          }
+        }
+        
+        // Actualizar estado del botón de registro
+        updateRegisterButton(faceCount) {
+          const registerBtn = this.registerBtn;
+          const validationInfo = this.validationInfo;
+          
+          if (faceCount === 1) {
+            registerBtn.classList.remove('btn-disabled');
+            registerBtn.classList.add('btn-success');
+            registerBtn.disabled = false;
+            registerBtn.textContent = 'Registrar Rostro';
+            
+            validationInfo.className = 'validation-info success';
+            validationInfo.innerHTML = '<strong>✅ Listo para registro:</strong> Un rostro detectado correctamente';
+            
+          } else if (faceCount === 0) {
+            registerBtn.classList.remove('btn-success');
+            registerBtn.classList.add('btn-disabled');
+            registerBtn.disabled = true;
+            registerBtn.textContent = 'Sin rostros detectados';
+            validationInfo.className = 'validation-info error';
+            validationInfo.innerHTML = '<strong>❌ Error:</strong> No se detectó ningún rostro. Por favor, asegúrate de que solo haya un rostro visible.';
+          } else {
+            registerBtn.classList.remove('btn-success');
+            registerBtn.classList.add('btn-disabled');
+            registerBtn.disabled = true;
+            registerBtn.textContent = 'Demasiados rostros';
+            validationInfo.className = 'validation-info error';
+            validationInfo.innerHTML = '<strong>❌ Error:</strong> Se detectaron múltiples rostros. Por favor, asegúrate de que solo haya un rostro visible.';
+          }
+        }
+        // Capturar un fotograma del video actual
         captureFrame() {
-          // Crear un canvas para capturar la imagen
           const canvas = document.createElement('canvas');
           canvas.width = this.video.videoWidth;
           canvas.height = this.video.videoHeight;
-          // Dibujar el fotograma actual del video
           const ctx = canvas.getContext('2d');
-          ctx.drawImage(this.video, 0, 0);
-          // Devolver como URL base64
-          return canvas.toDataURL('image/jpeg', 0.8);
+          ctx.drawImage(this.video, 0, 0, canvas.width, canvas.height);
+          return canvas.toDataURL('image/jpeg');
         }
-        // Intentar iniciar sesión con reconocimiento facial
+        // Intentar iniciar sesión con el rostro detectado
         async attemptLogin() {
           // Verificar que la cámara esté lista
           if (!this.video.videoWidth) {
